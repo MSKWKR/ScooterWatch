@@ -20,13 +20,13 @@ interface DeviceCardProps {
 }
 
 const MOCK_DATA: Device[] = [
-  { eventId: 'evt-1777600026271', deviceId: 'scooter-001', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 60 * 2 },
-  { eventId: 'evt-1777601047130', deviceId: 'scooter-002', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 8 },
-  { eventId: 'evt-1777601200000', deviceId: 'scooter-003', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 15 },
-  { eventId: 'evt-1777601300000', deviceId: 'scooter-004', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 30 },
-  { eventId: 'evt-1777601400000', deviceId: 'scooter-005', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 45 },
-  { eventId: 'evt-1777601500000', deviceId: 'scooter-006', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 45 },
-  { eventId: 'evt-1777601600000', deviceId: 'scooter-007', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 60 },
+  { eventId: 'evt-1777600026271', deviceId: 'mock-001', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 60 * 2 },
+  { eventId: 'evt-1777601047130', deviceId: 'mock-002', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 8 },
+  { eventId: 'evt-1777601200000', deviceId: 'mock-003', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 15 },
+  { eventId: 'evt-1777601300000', deviceId: 'mock-004', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 30 },
+  { eventId: 'evt-1777601400000', deviceId: 'mock-005', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 45 },
+  { eventId: 'evt-1777601500000', deviceId: 'mock-006', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 45 },
+  { eventId: 'evt-1777601600000', deviceId: 'mock-007', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 60 },
 ]
 
 const STATUS_STYLES = {
@@ -129,7 +129,7 @@ export default function ScooterDashboard() {
 
   useEffect(() => {
     const fetchDevices = async () => {
-      const res = await fetch('https://aws-api-url/events');
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/events`);
       const data: Device[] = await res.json();
       setDevices(data);
       setLastUpdated(new Date());
