@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 
-// Define TypeScript interfaces for the device and props
 interface Device {
   eventId: string
   deviceId: string
   alertStatus: string
-  status: 'EMERGENCY' | 'SUSPICIOUS' | 'NORMAL'
+  status: 'EMERGENCY' | 'SUSPICIOUS' | 'SAFE'
   timestamp: number
+  acceleration: number
+  tilt: number
+  gyro: number
+  humidity: number
+  rainStatus: 'RAIN' | 'NO_RAIN'
+  lastRainNotification: number
 }
 
 interface StatCardProps {
@@ -20,13 +25,13 @@ interface DeviceCardProps {
 }
 
 const MOCK_DATA: Device[] = [
-  { eventId: 'evt-1777600026271', deviceId: 'mock-001', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 60 * 2 },
-  { eventId: 'evt-1777601047130', deviceId: 'mock-002', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 8 },
-  { eventId: 'evt-1777601200000', deviceId: 'mock-003', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 15 },
-  { eventId: 'evt-1777601300000', deviceId: 'mock-004', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 30 },
-  { eventId: 'evt-1777601400000', deviceId: 'mock-005', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 45 },
-  { eventId: 'evt-1777601500000', deviceId: 'mock-006', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 45 },
-  { eventId: 'evt-1777601600000', deviceId: 'mock-007', alertStatus: 'NONE', status: 'NORMAL', timestamp: Date.now() - 1000 * 60 * 60 },
+  { eventId: 'evt-1779339527001', deviceId: 'mock-001', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 60 * 2, acceleration: 18.4, tilt: 45, gyro: 12, humidity: 72, rainStatus: 'NO_RAIN', lastRainNotification: 0 },
+  { eventId: 'evt-1779339527002', deviceId: 'mock-002', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 8, acceleration: 12.1, tilt: 22, gyro: 5, humidity: 85, rainStatus: 'RAIN', lastRainNotification: Date.now() - 1000 * 60 * 5 },
+  { eventId: 'evt-1779339527003', deviceId: 'mock-003', alertStatus: 'NONE', status: 'SAFE', timestamp: Date.now() - 1000 * 60 * 15, acceleration: 9.8, tilt: 5, gyro: 0, humidity: 99, rainStatus: 'RAIN', lastRainNotification: Date.now() - 1000 * 60 * 10 },
+  { eventId: 'evt-1779339527004', deviceId: 'mock-004', alertStatus: 'NONE', status: 'SAFE', timestamp: Date.now() - 1000 * 60 * 30, acceleration: 9.9, tilt: 3, gyro: 1, humidity: 60, rainStatus: 'NO_RAIN', lastRainNotification: 0 },
+  { eventId: 'evt-1779339527005', deviceId: 'mock-005', alertStatus: 'PENDING', status: 'SUSPICIOUS', timestamp: Date.now() - 1000 * 60 * 45, acceleration: 14.2, tilt: 30, gyro: 8, humidity: 78, rainStatus: 'NO_RAIN', lastRainNotification: 0 },
+  { eventId: 'evt-1779339527006', deviceId: 'mock-006', alertStatus: 'NONE', status: 'EMERGENCY', timestamp: Date.now() - 1000 * 45, acceleration: 22.0, tilt: 88, gyro: 20, humidity: 55, rainStatus: 'NO_RAIN', lastRainNotification: 0 },
+  { eventId: 'evt-1779339527007', deviceId: 'mock-007', alertStatus: 'NONE', status: 'SAFE', timestamp: Date.now() - 1000 * 60 * 60, acceleration: 9.8, tilt: 4, gyro: 0, humidity: 65, rainStatus: 'NO_RAIN', lastRainNotification: 0 },
 ]
 
 const STATUS_STYLES = {
@@ -42,7 +47,7 @@ const STATUS_STYLES = {
     indicator: 'bg-amber-50',
     icon: 'text-amber-700',
   },
-  NORMAL: {
+  SAFE: {
     border: 'border-l-green-600',
     badge: 'bg-green-50 text-green-700',
     indicator: 'bg-green-50',
@@ -50,10 +55,9 @@ const STATUS_STYLES = {
   },
 }
 
-const STATUS_ORDER = { EMERGENCY: 0, SUSPICIOUS: 1, NORMAL: 2 }
+const STATUS_ORDER = { EMERGENCY: 0, SUSPICIOUS: 1, SAFE: 2 }
 
-// Add type annotation for FILTERS
-const FILTERS: Array<'ALL' | 'EMERGENCY' | 'SUSPICIOUS' | 'NORMAL'> = ['ALL', 'EMERGENCY', 'SUSPICIOUS', 'NORMAL'];
+const FILTERS: Array<'ALL' | 'EMERGENCY' | 'SUSPICIOUS' | 'SAFE'> = ['ALL', 'EMERGENCY', 'SUSPICIOUS', 'SAFE'];
 
 function timeAgo(ts: number): string {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -73,9 +77,8 @@ function StatCard({ label, value, valueClass }: StatCardProps) {
   );
 }
 
-// Add type annotations to DeviceCard
 function DeviceCard({ device }: DeviceCardProps) {
-  const s = STATUS_STYLES[device.status] ?? STATUS_STYLES.NORMAL;
+  const s = STATUS_STYLES[device.status] ?? STATUS_STYLES.SAFE;
   const isPendingAlert = device.alertStatus === 'PENDING';
   const isMissingAlert = device.status === 'EMERGENCY' && device.alertStatus === 'NONE';
 
@@ -93,11 +96,20 @@ function DeviceCard({ device }: DeviceCardProps) {
         </svg>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <p className="font-mono text-sm font-medium text-gray-900">{device.deviceId}</p>
         <p className="font-mono text-xs text-gray-400">{device.eventId}</p>
+        <div className="flex gap-3 mt-1 flex-wrap">
+          <span className="font-mono text-xs text-gray-500">accel: {device.acceleration.toFixed(1)} m/s²</span>
+          <span className="font-mono text-xs text-gray-500">tilt: {device.tilt}°</span>
+          <span className="font-mono text-xs text-gray-500">gyro: {device.gyro}</span>
+          <span className="font-mono text-xs text-gray-500">humidity: {device.humidity}%</span>
+          <span className={`font-mono text-xs font-medium ${device.rainStatus === 'RAIN' ? 'text-blue-600' : 'text-gray-400'}`}>
+            {device.rainStatus === 'RAIN' ? 'RAIN' : 'DRY'}
+          </span>
+        </div>
         {isMissingAlert && (
-          <p className="text-xs text-red-600 mt-0.5">⚠ Emergency with no alert dispatched</p>
+          <p className="text-xs text-red-600 mt-0.5">Emergency with no alert dispatched</p>
         )}
       </div>
 
@@ -121,7 +133,6 @@ function DeviceCard({ device }: DeviceCardProps) {
   );
 }
 
-// Update state types in ScooterDashboard
 export default function ScooterDashboard() {
   const [devices, setDevices] = useState<Device[]>(MOCK_DATA);
   const [filter, setFilter] = useState<string>('ALL');
@@ -130,7 +141,8 @@ export default function ScooterDashboard() {
   useEffect(() => {
     const fetchDevices = async () => {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/events`);
-      const data: Device[] = await res.json();
+      const json = await res.json();
+      const data: Device[] = typeof json.body === 'string' ? JSON.parse(json.body) : json;
       setDevices(data);
       setLastUpdated(new Date());
     };
@@ -146,7 +158,7 @@ export default function ScooterDashboard() {
 
   const emergency = devices.filter((d) => d.status === 'EMERGENCY').length;
   const suspicious = devices.filter((d) => d.status === 'SUSPICIOUS').length;
-  const normal = devices.filter((d) => d.status === 'NORMAL').length;
+  const safe = devices.filter((d) => d.status === 'SAFE').length;
 
   return (
     <div className="p-5 max-w-3xl mx-auto">
@@ -175,7 +187,7 @@ export default function ScooterDashboard() {
           value={suspicious}
           valueClass={suspicious > 0 ? 'text-amber-600' : 'text-green-700'}
         />
-        <StatCard label="Normal" value={normal} valueClass="text-green-700" />
+        <StatCard label="Safe" value={safe} valueClass="text-green-700" />
       </div>
 
       {/* Filters */}
